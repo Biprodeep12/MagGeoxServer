@@ -61,6 +61,7 @@ async function startSimulation(routeDoc, { ORS_API_KEY, io, options = {}, TICK_M
                 hour: "2-digit",
                 minute: "2-digit",
                 hour12: true,
+                timeZone: "Asia/Kolkata",
               })
             : null, 
           etaSeconds: null,
@@ -73,10 +74,15 @@ async function startSimulation(routeDoc, { ORS_API_KEY, io, options = {}, TICK_M
       const etaSeconds = Math.round((stopDistKm / speedKmh) * 3600);
 
       const etaDate = new Date(Date.now() + etaSeconds * 1000);
-
+      const formattedETA = etaDate.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Kolkata",
+      });
       return {
         stopId: stop.stopId,
-        eta: etaDate,
+        eta: formattedETA,
         etaSeconds,
         reached: false,
       };
