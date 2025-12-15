@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 
+console.log('[INFO] Loading BusRouteInfo model');
+
 const routeSchema = new mongoose.Schema({
   Route: { type: String, required: true, index: true },
   startPoint: {

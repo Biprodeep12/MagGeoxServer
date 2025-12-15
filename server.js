@@ -25,6 +25,17 @@ mongoose.connect(config.MONGODB_URI).then(() => {
   console.log("Connected to MongoDB");
   server.listen(config.PORT, () => console.log(`Server running on port ${config.PORT}`));
 }).catch(err => {
-  console.error("Failed to connect to MongoDB:", err);
+  console.error("[ERROR] Failed to connect to MongoDB:", err.message || err);
+  console.error("[ERROR] Stack:", err.stack);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[ERROR] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[ERROR] Uncaught Exception:', err.message || err);
+  console.error('[ERROR] Stack:', err.stack);
   process.exit(1);
 });

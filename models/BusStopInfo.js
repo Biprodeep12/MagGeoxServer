@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 
+console.log('[INFO] Loading BusStopInfo model');
+
 const busStopInfoSchema = new mongoose.Schema(
   {
     routeId: { type: String, required: true, index: true },

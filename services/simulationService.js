@@ -5,11 +5,19 @@ const { fetchORSRoute } = require("./orsService");
 const simulations = new Map();
 
 async function startSimulation(routeDoc, { ORS_API_KEY, io, options = {}, TICK_MS, BUS_SPEED_KMH, PROXIMITY_METERS }) {
-  const routeId = routeDoc.Route;
-  if (simulations.has(routeId)) return simulations.get(routeId).meta;
+  try {
+    const routeId = routeDoc.Route;
+    console.log(`[INFO] Starting simulation for route: ${routeId}`);
+    if (simulations.has(routeId)) {
+      console.log(`[WARN] Simulation already running for route: ${routeId}`);
+      return simulations.get(routeId).meta;
+    }
 
-  const geometry = await fetchORSRoute(routeDoc.startPoint.coords, routeDoc.endPoint.coords, ORS_API_KEY);
-  if (!geometry || geometry.type !== "LineString") throw new Error("Unsupported geometry from ORS");
+    const geometry = await fetchORSRoute(routeDoc.startPoint.coords, routeDoc.endPoint.coords, ORS_API_KEY);
+    if (!geometry || geometry.type !== "LineString") {
+      console.error(`[ERROR] Unsupported geometry from ORS for route ${routeId}`);
+      throw new Error("Unsupported geometry from ORS");
+    }
 
   const line = turf.lineString(geometry.coordinates);
   const totalLengthKm = turf.length(line, { units: "kilometers" });
@@ -111,24 +119,42 @@ async function startSimulation(routeDoc, { ORS_API_KEY, io, options = {}, TICK_M
     if (distanceAlongKm >= totalLengthKm) {
       clearInterval(intervalId);
       simulations.delete(routeId);
+      console.log(`[INFO] Simulation finished for route: ${routeId}`);
       io.to(routeId).emit("simulationFinished", { busId, routeId, timestamp: Date.now() });
     }
   }, TICK_MS);
 
   simulations.set(routeId, { intervalId, meta, state: { distanceAlongKm, stops, line } });
+  console.log(`[INFO] Simulation successfully started for route: ${routeId}`);
   return meta;
+  } catch (err) {
+    console.error(`[ERROR] Failed to start simulation for route ${routeDoc.Route}:`, err.message || err);
+    console.error('[ERROR] Stack:', err.stack);
+    throw err;
+  }
 }
 
 function updateBusLocationOnly(routeId, io, payload, BUS_SPEED_KMH) {
-  const msg = {
-    busId: routeId,
-    coords: payload.coords,
-    speedKmh: payload.speedKmh || BUS_SPEED_KMH,
-    manual: true,
-    timestamp: Date.now(),
-  };
-  io.to(routeId).emit("locationUpdate", msg);
-  return msg;
+  try {
+    if (!payload.coords || payload.coords.length !== 2) {
+      console.error(`[ERROR] Invalid coordinates for route ${routeId}:`, payload.coords);
+      throw new Error('Invalid coordinates');
+    }
+    const msg = {
+      busId: routeId,
+      coords: payload.coords,
+      speedKmh: payload.speedKmh || BUS_SPEED_KMH,
+      manual: true,
+      timestamp: Date.now(),
+    };
+    io.to(routeId).emit("locationUpdate", msg);
+    console.log(`[INFO] Bus location updated for route: ${routeId}`);
+    return msg;
+  } catch (err) {
+    console.error(`[ERROR] Failed to update bus location for route ${routeId}:`, err.message || err);
+    console.error('[ERROR] Stack:', err.stack);
+    throw err;
+  }
 }
 
 module.exports = { startSimulation, updateBusLocationOnly };

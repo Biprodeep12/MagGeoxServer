@@ -10,9 +10,12 @@ const config = {
 };
 
 if (!config.MONGODB_URI) {
-  console.error("MONGODB_URI not set in env");
+  console.error("[ERROR] MONGODB_URI not set in environment variables");
   process.exit(1);
 }
-if (!config.ORS_API_KEY) console.warn("Warning: ORS_API_KEY not set. ORS route fetch will fail.");
+if (!config.ORS_API_KEY) {
+  console.warn("[WARN] ORS_API_KEY not set in environment variables. ORS route fetch will fail.");
+}
+console.log('[INFO] Configuration loaded successfully');
 
 module.exports = config;
